@@ -1,0 +1,47 @@
+library(tidyverse)
+library(DESeq2)
+
+
+### normalize counts matrix with DESeq2
+
+my_cts <- read_csv("./data/counts_matrix_new.txt")
+meta <- read_csv("./data/metadata.txt")
+
+### meta is table of metadata, or here: single column with header "sample"
+### my_cts[,1] ignores the first column with contig names
+### design = column of meta for which differential analysis is done
+
+cds <- DESeqDataSetFromMatrix(my_cts[,-1], colData=meta, design= ~sample)
+dds <- estimateSizeFactors(cds)
+cts_norm <- counts(dds, normalized=TRUE)
+cts_norm_tibble <- as_tibble(cts_norm, rownames = "gene")
+
+
+
+### make PCA analysis with normalised matrix 
+
+pca_matrix <- cts_norm_tibble %>% column_to_rownames("gene") %>% as.matrix() %>% t()
+     # make the "gene" column become the rownames of the table
+     #     column_to_rownames("gene") %>% 
+     # coerce to a matrix
+     #     as.matrix() %>% 
+     # transpose the matrix so that rows = samples and columns = variables
+     #     t()
+
+sample_pca <- prcomp(pca_matrix)
+
+pc_eigenvalues <- sample_pca$sdev^2
+
+pc_eigenvalues <- tibble(PC = factor(1:length(pc_eigenvalues)), variance = pc_eigenvalues) %>% mutate(pct = variance/sum(variance)*100) %>% mutate(pct_cum = cumsum(pct))
+     # add a new column with the percent variance
+     # "mutate(pct = variance/sum(variance)*100) %>% "
+     # add another column with the cumulative variance explained
+     # "mutate(pct_cum = cumsum(pct))"
+
+pc_eigenvalues %>% ggplot(aes(x = PC)) + geom_col(aes(y = pct)) + geom_line(aes(y = pct_cum,group = 1)) + geom_point(aes(y = pct_cum)) + labs(x = "Principal component", y = "Fraction variance explained")
+
+pc_scores <- data.frame(sample_pca$x)
+sample = rownames(pc_scores)
+
+# create the plot
+pc_scores %>% ggplot(aes(x = PC1, y = PC2, label=sample)) + geom_point() + geom_text()

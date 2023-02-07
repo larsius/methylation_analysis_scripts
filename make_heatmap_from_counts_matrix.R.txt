@@ -1,0 +1,52 @@
+###biocManagger::install("DESeq2")
+##biocManager::install("gplots")
+
+library(DESeq2)
+library(gplots)
+library(RColorBrewer)
+
+countData <- read.csv("data/counts_matrix_new.txt",header=T, row.names=1)
+colData <- DataFrame(condition=factor(c("south","south","south","south","south",
+    "south","south","north","north","north","north","north")))
+
+####colData <- DataFrame(condition=factor(c("F","S","S","F","S","F","S","F","F","F","F","F"))) ### F Fliessgewässer #### S See
+
+
+dds2 <- DESeqDataSetFromMatrix(countData, colData, formula(~ condition))
+dds2 <- DESeq(dds2)
+
+### visualize differentially methylated genes (South/North)
+plotMA(dds2)
+
+# get differentially methylated genes
+res <- results(dds2)
+
+# prder by BH adjusted p-value
+resOrdered <- res[order(res$padj),]
+
+### optionally have a look 
+# head(resOrdered)
+
+### get differentially methylated matrix
+sig <- resOrdered[!is.na(resOrdered$padj) & resOrdered$padj<0.10 & abs(resOrdered$log2FoldChange)>=1,]
+
+selected <- rownames(sig)
+
+### define heatmap colors
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+
+### make heatmap
+### better log2 transformed, but problems with 0 values (become "inf." in log2): 
+### heatmap.2( log2(counts(dds2,normalized=TRUE)[rownames(dds2) %in% selected,]), ...
+
+heatmap.2(counts(dds2,normalized=TRUE)[rownames(dds2) %in% selected,],
+    col = hmcol, scale="row",
+    Rowv = TRUE, Colv = FALSE,
+    dendrogram="row",
+    trace="none",
+    margin=c(4,6), cexRow=0.3, cexCol=1, keysize=1)
+
+
+
+
+
