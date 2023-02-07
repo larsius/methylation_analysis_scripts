@@ -1,5 +1,6 @@
-###biocManagger::install("DESeq2")
-##biocManager::install("gplots")
+### Installing R packages with Bioconductor
+# biocManagger::install("DESeq2")
+# biocManager::install("gplots")
 
 library(DESeq2)
 library(gplots)
@@ -9,7 +10,8 @@ countData <- read.csv("data/counts_matrix_new.txt",header=T, row.names=1)
 colData <- DataFrame(condition=factor(c("south","south","south","south","south",
     "south","south","north","north","north","north","north")))
 
-####colData <- DataFrame(condition=factor(c("F","S","S","F","S","F","S","F","F","F","F","F"))) ### F Fliessgewässer #### S See
+###  Alternative condition, e.g. Fliessgewässer (F) / See (S)
+#  colData <- DataFrame(condition=factor(c("F","S","S","F","S","F","S","F","F","F","F","F"))) 
 
 
 dds2 <- DESeqDataSetFromMatrix(countData, colData, formula(~ condition))
@@ -36,7 +38,7 @@ selected <- rownames(sig)
 hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 
 ### make heatmap
-### better log2 transformed, but problems with 0 values (become "inf." in log2): 
+### better when log2 transformed, but problems with 0 values (become "inf." in log2), threrefore: 
 ### heatmap.2( log2(counts(dds2,normalized=TRUE)[rownames(dds2) %in% selected,]), ...
 
 heatmap.2(counts(dds2,normalized=TRUE)[rownames(dds2) %in% selected,],
